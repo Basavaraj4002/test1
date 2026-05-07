@@ -127,7 +127,7 @@ def start_test(req: StartTestRequest):
             "content": "image",
             "image_url": f"https://picsum.photos/400/400?random={random.randint(1, 1000)}"
         },
-        distractor_duration_seconds=120
+        distractor_duration_seconds=60
     )
 
 
