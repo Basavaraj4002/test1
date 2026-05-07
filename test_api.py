@@ -32,6 +32,15 @@ def run_test():
     print(f"    Words shown: {session['words']}")
     print(f"    Distractor : {session['distractor_task']}")
 
+    # ── Step 1.5: Simulate Jigsaw Puzzle Distractor ───────────
+    print("\n[1.5] Simulating Jigsaw Puzzle (Distractor)...")
+    jigsaw = session['distractor_task']
+    if jigsaw['type'] == 'jigsaw':
+        print(f"    -> Loading {jigsaw['pieces']}-piece jigsaw puzzle.")
+        print(f"    -> Fetching random image from: {jigsaw['image_url']}")
+        print(f"    -> Patient works on puzzle for 120 seconds...")
+        print(f"    -> Jigsaw completed!")
+    
     # ── Step 2: Simulate patient recall ───────────────────────
     # Patient remembered 3 of 5 words + 1 wrong word (intrusion)
     words_shown = session["words"]
