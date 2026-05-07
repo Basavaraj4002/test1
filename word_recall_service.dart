@@ -46,6 +46,7 @@ class WordRecallService {
     List<int>? perWordTimeMs,
     List<String>? delayedRecall,
     int? delayedRecallTimeMs,
+    int? yesNoScore,
     String language = 'en',
   }) async {
     final response = await http.post(
@@ -64,6 +65,7 @@ class WordRecallService {
         'distractor_completed': true,
         'delayed_recall': delayedRecall,
         'delayed_recall_time_ms': delayedRecallTimeMs,
+        if (yesNoScore != null) 'yes_no_score': yesNoScore,
       }),
     );
 
@@ -80,15 +82,17 @@ class WordRecallService {
 class WordRecallSession {
   final String sessionId;
   final List<String> words;
-  final int displayDurationSeconds;
-  final List<Map<String, dynamic>> distractorQuestions;
+  final double displayDurationSeconds;
+  final int yesNoTimeoutSeconds;
+  final Map<String, dynamic> distractorTask;
   final int distractorDurationSeconds;
 
   WordRecallSession({
     required this.sessionId,
     required this.words,
     required this.displayDurationSeconds,
-    required this.distractorQuestions,
+    required this.yesNoTimeoutSeconds,
+    required this.distractorTask,
     required this.distractorDurationSeconds,
   });
 
@@ -96,9 +100,9 @@ class WordRecallSession {
     return WordRecallSession(
       sessionId: json['session_id'],
       words: List<String>.from(json['words']),
-      displayDurationSeconds: json['display_duration_seconds'],
-      distractorQuestions:
-          List<Map<String, dynamic>>.from(json['distractor_questions']),
+      displayDurationSeconds: (json['display_duration_seconds'] as num).toDouble(),
+      yesNoTimeoutSeconds: json['yes_no_timeout_seconds'],
+      distractorTask: json['distractor_task'],
       distractorDurationSeconds: json['distractor_duration_seconds'],
     );
   }

@@ -30,7 +30,7 @@ def run_test():
 
     print(f"    Session ID : {session['session_id']}")
     print(f"    Words shown: {session['words']}")
-    print(f"    Distractor : {session['distractor_questions']}")
+    print(f"    Distractor : {session['distractor_task']}")
 
     # ── Step 2: Simulate patient recall ───────────────────────
     # Patient remembered 3 of 5 words + 1 wrong word (intrusion)
@@ -53,7 +53,8 @@ def run_test():
         "per_word_time_ms": [1200, 3400, 5600, 8900],
         "distractor_completed": True,
         "delayed_recall": [words_shown[0], words_shown[2]],
-        "delayed_recall_time_ms": 12000
+        "delayed_recall_time_ms": 12000,
+        "yes_no_score": 4
     })
 
     assert submit_res.status_code == 200, f"Submit failed: {submit_res.text}"

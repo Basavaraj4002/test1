@@ -27,26 +27,18 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 
 # ─── Word Banks ────────────────────────────────────────────────────────────────
 # Words chosen by concreteness, imageability, and cross-language recognizability
-WORD_SETS = {
+WORD_POOL = {
     "en": [
-        ["apple", "table", "river", "honesty", "purple"],
-        ["doctor", "garden", "music", "window", "elephant"],
-        ["candle", "justice", "banana", "carpet", "village"],
+        "apple", "table", "river", "honesty", "purple",
+        "doctor", "garden", "music", "window", "elephant",
+        "candle", "justice", "banana", "carpet", "village"
     ],
     "hi": [
-        ["सेब", "मेज़", "नदी", "ईमानदारी", "बैंगनी"],
-        ["डॉक्टर", "बगीचा", "संगीत", "खिड़की", "हाथी"],
-        ["मोमबत्ती", "न्याय", "केला", "कालीन", "गाँव"],
+        "सेब", "मेज़", "नदी", "ईमानदारी", "बैंगनी",
+        "डॉक्टर", "बगीचा", "संगीत", "खिड़की", "हाथी",
+        "मोमबत्ती", "न्याय", "केला", "कालीन", "गाँव"
     ]
 }
-
-DISTRACTOR_QUESTIONS = [
-    {"question": "What is 14 + 9?", "answer": "23"},
-    {"question": "What is 27 - 8?", "answer": "19"},
-    {"question": "What is 6 × 4?", "answer": "24"},
-    {"question": "What is 36 ÷ 6?", "answer": "6"},
-    {"question": "What is 15 + 17?", "answer": "32"},
-]
 
 # ─── Request / Response Models ─────────────────────────────────────────────────
 
@@ -59,8 +51,9 @@ class StartTestRequest(BaseModel):
 class StartTestResponse(BaseModel):
     session_id: str
     words: List[str]
-    display_duration_seconds: int  # how long to show words
-    distractor_questions: List[dict]  # arithmetic to do before recall
+    display_duration_seconds: float  # how long to show words
+    yes_no_timeout_seconds: int
+    distractor_task: dict  # jigsaw configuration
     distractor_duration_seconds: int
 
 class SubmitRecallRequest(BaseModel):
@@ -76,6 +69,7 @@ class SubmitRecallRequest(BaseModel):
     distractor_completed: bool = True
     delayed_recall: Optional[List[str]] = None     # recalled at end of full battery
     delayed_recall_time_ms: Optional[int] = None
+    yes_no_score: Optional[int] = None             # score for yes/no questions
 
 class WordRecallResult(BaseModel):
     session_id: str
@@ -108,12 +102,10 @@ def root():
 @app.post("/api/test/word-recall/start", response_model=StartTestResponse)
 def start_test(req: StartTestRequest):
     """
-    Call this first. Returns a word set and distractor arithmetic questions.
-    Flutter shows words for 10 seconds, then runs distractor for 2 minutes,
-    then calls /submit.
+    Call this first. Returns a word set and distractor task.
     """
-    lang = req.language if req.language in WORD_SETS else "en"
-    word_set = random.choice(WORD_SETS[lang])
+    lang = req.language if req.language in WORD_POOL else "en"
+    word_set = random.sample(WORD_POOL[lang], 5)
     session_id = f"{req.patient_id}_{int(time.time())}"
 
     sessions[session_id] = {
@@ -126,8 +118,15 @@ def start_test(req: StartTestRequest):
     return StartTestResponse(
         session_id=session_id,
         words=word_set,
-        display_duration_seconds=10,
-        distractor_questions=random.sample(DISTRACTOR_QUESTIONS, 3),
+        display_duration_seconds=2.5,
+        yes_no_timeout_seconds=3,
+        distractor_task={
+            "type": "jigsaw",
+            "pieces": 9,
+            "randomize": True,
+            "content": "image",
+            "image_url": f"https://picsum.photos/400/400?random={random.randint(1, 1000)}"
+        },
         distractor_duration_seconds=120
     )
 
@@ -230,6 +229,7 @@ Provide analysis in this EXACT JSON format (no markdown, no extra text):
             "retention_ratio": retention_ratio,
             "immediate_recall_time_ms": req.immediate_recall_time_ms,
             "per_word_time_ms": req.per_word_time_ms,
+            "yes_no_score": req.yes_no_score,
             "age": req.age,
             "education_years": req.education_years,
             "doctor_note": gemini_data.get("doctor_note", "")
